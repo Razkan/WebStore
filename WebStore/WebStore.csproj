@@ -136,6 +136,7 @@
     <Compile Include="App_Start\WebApiConfig.cs" />
     <Compile Include="API\UserController.cs" />
     <Compile Include="API\ValuesController.cs" />
+    <Compile Include="Configuration.cs" />
     <Compile Include="Db\Database.cs" />
     <Compile Include="Db\IDatabase.cs" />
     <Compile Include="Db\KeyAttribute.cs" />

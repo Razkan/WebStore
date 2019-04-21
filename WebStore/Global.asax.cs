@@ -8,6 +8,7 @@ namespace WebStore
     {
         protected void Application_Start()
         {
+            Configuration.Register();
             Database.Register();
             GlobalConfiguration.Configure(WebApiConfig.Register);
         }

@@ -4,24 +4,23 @@ using System.Data.SQLite;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using static WebStore.Configuration;
 
 namespace WebStore.Db
 {
     public class SQLiteDatabase : IDatabase
     {
-        private const string DatabaseDirectory = "c:\\sqlite";
-        private const string DatabaseName = "MyDatabase.sqlite";
-        private const string DatabaseFile = DatabaseDirectory + "\\" + DatabaseName;
-
-        private const string SQLiteArgs = "Data Source=c:\\sqlite\\MyDatabase.sqlite;Version=3;";
-
         private const string INTEGER = nameof(INTEGER);
         private const string TEXT = nameof(TEXT);
         private const string Id = nameof(Id);
 
+        private static string DbDirectory;
+        private static string DbName;
+        private static string DbFile;
+
+        private static string DbArgs;
+
         private static readonly Type[] StringType = {typeof(string)};
-        private static readonly Type DateTimeType = typeof(DateTime);
-        private static readonly Type TimeSpanType = typeof(TimeSpan);
 
         public void Run()
         {
@@ -31,8 +30,13 @@ namespace WebStore.Db
 
         private void Setup()
         {
-            if (!Directory.Exists(DatabaseDirectory)) Directory.CreateDirectory(DatabaseDirectory);
-            if (!File.Exists(DatabaseFile)) SQLiteConnection.CreateFile(DatabaseFile);
+            DbDirectory = Config.Database.Directory;
+            DbName = Config.Database.Name;
+            DbFile = DbDirectory + "\\" + DbName;
+            DbArgs = Config.Database.Args;
+
+            if (!Directory.Exists(DbDirectory)) Directory.CreateDirectory(DbDirectory);
+            if (!File.Exists(DbFile)) SQLiteConnection.CreateFile(DbFile);
         }
 
         private static void CreateTable()
@@ -183,7 +187,7 @@ namespace WebStore.Db
 
         private static T ExecuteReader<T>(string sql, Func<SQLiteDataReader, T> func)
         {
-            using (var conn = new SQLiteConnection(SQLiteArgs))
+            using (var conn = new SQLiteConnection(DbArgs))
             {
                 conn.Open();
                 var cmd = new SQLiteCommand(sql, conn);
@@ -204,7 +208,7 @@ namespace WebStore.Db
 
         private static void ExecuteNonQuery(string sql)
         {
-            using (var conn = new SQLiteConnection(SQLiteArgs))
+            using (var conn = new SQLiteConnection(DbArgs))
             {
                 conn.Open();
                 var cmd = new SQLiteCommand(sql, conn);
