@@ -1,0 +1,43 @@
+.main {
+  display: flex;
+  flex-flow: row wrap;
+  font-weight: bold;
+  text-align: center;
+
+  min-height: 100vh;
+  flex-direction: column;
+}
+
+.top {
+  background: tomato;
+}
+
+.left {
+  background: gold;
+}
+
+.center {
+  flex: 1;
+  background: deepskyblue;
+}
+
+.right {
+  background: hotpink;
+}
+
+.bottom {
+  background: lightgreen;
+}
+
+.top, .bottom {
+  min-height: 100px;
+}
+
+.left, .right {
+  min-width: 100px;
+}
+
+.content {
+  display: flex;
+  flex: 1;
+}
