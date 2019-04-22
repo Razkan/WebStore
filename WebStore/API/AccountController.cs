@@ -12,8 +12,8 @@ namespace WebStore.API
     {
         //protected override IEnumerable<AccountForm> HttpGet() => new[] {new AccountForm {Name = "abc"}};
         [Route("api/account/{username}")]
-        public object Get(string username) => new
-            {available = !Database.Contains<Account>($"{nameof(Account.Username)}='{username}'")};
+        public async Task<object> Get(string username) => new
+            {available = !await Database.ContainsAsync<Account>($"{nameof(Account.Username)}='{username}'")};
 
         protected override async Task HttpPost(AccountForm form)
         {
@@ -27,7 +27,7 @@ namespace WebStore.API
                 throw new HttpResponseException(Request.CreateErrorResponse(HttpStatusCode.Forbidden,
                     $"username '{form.Username}' is not available"));
 
-            Database.Insert(Account.Make(form.Username, form.Password, WSUser.Make()));
+            await Database.InsertAsync(Account.Make(form.Username, form.Password, WSUser.Make()));
 
             Request.CreateResponse(HttpStatusCode.OK);
         }

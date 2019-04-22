@@ -1,9 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Data;
+using System.Data.Common;
 using System.Data.SQLite;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Threading.Tasks;
 using static WebStore.Configuration;
 
 namespace WebStore.Db
@@ -27,6 +30,7 @@ namespace WebStore.Db
             Setup();
             CreateTable();
         }
+
 
         private void Setup()
         {
@@ -107,6 +111,20 @@ namespace WebStore.Db
             });
         }
 
+        // ReSharper disable once PossiblyMistakenUseOfParamsMethod
+        public async Task<T> SelectAsync<T>(string id) where T : class => await SelectAsync<T>(args: $"id='{id}'");
+
+        public async Task<T> SelectAsync<T>(params object[] args) where T : class
+        {
+            var sql = $"SELECT * FROM {typeof(T).Name} " +
+                      $"WHERE {string.Join(" AND ", args)};";
+            return await ExecuteReaderAsync(sql, async reader =>
+            {
+                await reader.ReadAsync();
+                return reader.HasRows ? ToObject<T>(reader) : default;
+            }).Unwrap();
+        }
+
         public IEnumerable<T> SelectAll<T>() where T : class
         {
             var sql = $"SELECT * FROM {typeof(T).Name};";
@@ -120,6 +138,21 @@ namespace WebStore.Db
 
                 return list;
             });
+        }
+
+        public async Task<IEnumerable<T>> SelectAllAsync<T>() where T : class
+        {
+            var sql = $"SELECT * FROM {typeof(T).Name};";
+            return await ExecuteReaderAsync(sql, async reader =>
+            {
+                var list = new List<T>();
+                while (await reader.ReadAsync())
+                {
+                    list.Add(ToObject<T>(reader));
+                }
+
+                return list;
+            }).Unwrap();
         }
 
         // ReSharper disable once PossiblyMistakenUseOfParamsMethod
@@ -137,6 +170,23 @@ namespace WebStore.Db
             });
         }
 
+        // ReSharper disable once PossiblyMistakenUseOfParamsMethod
+        public async Task<bool> ContainsAsync<T>(string id) where T : class =>
+            await ContainsAsync<T>(args: $"id='{id}'");
+
+        public Task<bool> ContainsAsync<T>(params object[] args) where T : class
+        {
+            var sql = $"SELECT * FROM {typeof(T).Name} " +
+                      $"WHERE {string.Join(" AND ", args)} " +
+                      "LIMIT 1;";
+            return ExecuteReaderAsync(sql, async reader =>
+            {
+                await reader.ReadAsync();
+                return reader.HasRows;
+            }).Unwrap();
+        }
+
+
         public void Insert<T>(T entity) where T : class
         {
             RecursiveInsert(entity);
@@ -145,6 +195,16 @@ namespace WebStore.Db
                 $"INSERT OR IGNORE INTO {type.Name}({GetPropertyNames(type)}) " +
                 $"VALUES('{GetPropertyValues(entity)}');";
             ExecuteNonQuery(sql);
+        }
+
+        public async Task InsertAsync<T>(T entity) where T : class
+        {
+            RecursiveInsert(entity);
+            var type = typeof(T);
+            var sql =
+                $"INSERT OR IGNORE INTO {type.Name}({GetPropertyNames(type)}) " +
+                $"VALUES('{GetPropertyValues(entity)}');";
+            await ExecuteNonQueryAsync(sql);
         }
 
 
@@ -174,6 +234,16 @@ namespace WebStore.Db
             ExecuteNonQuery(sql);
         }
 
+        public async Task UpdateAsync<T>(T entity) where T : class
+        {
+            var type = typeof(T);
+            var sql =
+                $"UPDATE {type.Name} " + // UPDATE User
+                $"SET {GetPropertyValuePair(entity)} " + // SET Id='5', FirstName='John', LastName='Doe'
+                $"WHERE Id='{GetPropertyId(entity)}';"; // WHERE Id=5
+            await ExecuteNonQueryAsync(sql);
+        }
+
         public void Delete<T>(T entity) where T : class
         {
             //DELETE FROM Students WHERE StudentId = 11 OR StudentId = 12;
@@ -185,7 +255,18 @@ namespace WebStore.Db
             ExecuteNonQuery(sql);
         }
 
-        private static T ExecuteReader<T>(string sql, Func<SQLiteDataReader, T> func)
+        public async Task DeleteAsync<T>(T entity) where T : class
+        {
+            //DELETE FROM Students WHERE StudentId = 11 OR StudentId = 12;
+            var type = typeof(T);
+            var sql =
+                $"DELETE FROM {type.Name} " + // DELETE FROM User
+                $"WHERE Id='{GetPropertyId(entity)}';"; // WHERE Id=5 
+
+            await ExecuteNonQueryAsync(sql);
+        }
+
+        private static T ExecuteReader<T>(string sql, Func<DbDataReader, T> func)
         {
             using (var conn = new SQLiteConnection(DbArgs))
             {
@@ -223,12 +304,51 @@ namespace WebStore.Db
             }
         }
 
-        private T ToObject<T>(SQLiteDataReader reader) where T : class
+        private static async Task<T> ExecuteReaderAsync<T>(string sql, Func<DbDataReader, T> func)
+        {
+            using (var conn = new SQLiteConnection(DbArgs))
+            {
+                await conn.OpenAsync();
+                var cmd = new SQLiteCommand(sql, conn);
+                try
+                {
+                    using (var reader = await cmd.ExecuteReaderAsync())
+                    {
+                        return func(reader);
+                    }
+                }
+                catch (Exception e)
+                {
+                    // Log errors
+                    return default;
+                }
+            }
+        }
+
+
+        private static async Task ExecuteNonQueryAsync(string sql)
+        {
+            using (var conn = new SQLiteConnection(DbArgs))
+            {
+                await conn.OpenAsync();
+                var cmd = new SQLiteCommand(sql, conn);
+                try
+                {
+                    await cmd.ExecuteNonQueryAsync();
+                }
+                catch (Exception e)
+                {
+                    // Log errors
+                }
+            }
+        }
+
+        private T ToObject<T>(IDataRecord reader) where T : class
         {
             var t = Activator.CreateInstance<T>();
             for (var i = 0; i < reader.FieldCount; i++)
             {
-                var pi = t.GetType().GetProperty(reader.GetOriginalName(i));
+                var pi = t.GetType().GetProperty(reader.GetName(i));
                 if (pi == null) continue;
                 pi.SetValue(t, ToObject(reader.GetValue(i)));
 

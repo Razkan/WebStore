@@ -12,9 +12,9 @@ namespace WebStore.API
     public class SessionController : JsonApiController
     {
         [Route("api/session/{token}")]
-        public object Get(string token)
+        public async Task<object> Get(string token)
         {
-            var session = Database.Select<Session>($"{nameof(Session.Token)}='{token}'");
+            var session = await Database.SelectAsync<Session>($"{nameof(Session.Token)}='{token}'");
             if (session == null) return new {Expired = true};
             if (session.Expired()) return new {Expired = true};
             return new {Expires = session.Expires()};
@@ -34,22 +34,22 @@ namespace WebStore.API
             if (string.IsNullOrWhiteSpace(username)) throw new HttpResponseException(HttpStatusCode.Forbidden);
             if (string.IsNullOrWhiteSpace(password)) throw new HttpResponseException(HttpStatusCode.Forbidden);
 
-            var account = Database.Select<Account>($"{nameof(Account.Username)}='{username}'",
+            var account = await Database.SelectAsync<Account>($"{nameof(Account.Username)}='{username}'",
                 $"{nameof(Account.Password)}='{password}'");
 
             if (account == null) throw new HttpResponseException(HttpStatusCode.Forbidden);
 
-            var session = Database.Select<Session>($"{nameof(Session.Account)}='{account.Id}'");
+            var session = await Database.SelectAsync<Session>($"{nameof(Session.Account)}='{account.Id}'");
 
             if (session == null)
             {
                 session = Session.Make(account, TimeSpan.FromMinutes(30));
-                Database.Insert(session);
+                await Database.InsertAsync(session);
             }
             else
             {
                 session.Refresh();
-                Database.Update(session);
+                await Database.UpdateAsync(session);
             }
 
             return new
