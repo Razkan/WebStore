@@ -1,4 +1,5 @@
 ﻿using System.Net;
+using System.Net.Http;
 using System.Threading.Tasks;
 using System.Web.Http;
 using Newtonsoft.Json;
@@ -9,22 +10,24 @@ namespace WebStore.API
     {
         public async Task<object> Get() => await HttpGet();
 
-        public async Task Post() => await
+        public async Task<HttpResponseMessage> Post() => await
             HttpPost(JsonConvert.DeserializeObject<TForm>(await Request.Content.ReadAsStringAsync()));
 
-        public async Task Put() =>
+        public async Task<HttpResponseMessage> Put() =>
             await HttpPut(JsonConvert.DeserializeObject<TForm>(await Request.Content.ReadAsStringAsync()));
 
-        public async Task Delete() =>
+        public async Task<HttpResponseMessage> Delete() =>
             await HttpDelete(JsonConvert.DeserializeObject<TForm>(await Request.Content.ReadAsStringAsync()));
 
         protected virtual Task<object> HttpGet() => throw new HttpResponseException(HttpStatusCode.MethodNotAllowed);
 
-        protected virtual Task HttpPost(TForm form) => throw new HttpResponseException(HttpStatusCode.MethodNotAllowed);
+        protected virtual Task<HttpResponseMessage> HttpPost(TForm form) =>
+            throw new HttpResponseException(HttpStatusCode.MethodNotAllowed);
 
-        protected virtual Task HttpPut(TForm form) => throw new HttpResponseException(HttpStatusCode.MethodNotAllowed);
+        protected virtual Task<HttpResponseMessage> HttpPut(TForm form) =>
+            throw new HttpResponseException(HttpStatusCode.MethodNotAllowed);
 
-        protected virtual Task HttpDelete(TForm form) =>
+        protected virtual Task<HttpResponseMessage> HttpDelete(TForm form) =>
             throw new HttpResponseException(HttpStatusCode.MethodNotAllowed);
     }
 
@@ -32,23 +35,24 @@ namespace WebStore.API
     {
         public async Task<object> Get() => await HttpGet();
 
-        public async Task Post() => await
+        public async Task<HttpResponseMessage> Post() => await
             HttpPost(JsonConvert.DeserializeObject<object>(await Request.Content.ReadAsStringAsync()));
 
-        public async Task Put() =>
+        public async Task<HttpResponseMessage> Put() =>
             await HttpPut(JsonConvert.DeserializeObject<object>(await Request.Content.ReadAsStringAsync()));
 
-        public async Task Delete() =>
+        public async Task<HttpResponseMessage> Delete() =>
             await HttpDelete(JsonConvert.DeserializeObject<object>(await Request.Content.ReadAsStringAsync()));
 
         protected virtual Task<object> HttpGet() => throw new HttpResponseException(HttpStatusCode.MethodNotAllowed);
 
-        protected virtual Task HttpPost(object form) =>
+        protected virtual Task<HttpResponseMessage> HttpPost(object form) =>
             throw new HttpResponseException(HttpStatusCode.MethodNotAllowed);
 
-        protected virtual Task HttpPut(object form) => throw new HttpResponseException(HttpStatusCode.MethodNotAllowed);
+        protected virtual Task<HttpResponseMessage> HttpPut(object form) =>
+            throw new HttpResponseException(HttpStatusCode.MethodNotAllowed);
 
-        protected virtual Task HttpDelete(object form) =>
+        protected virtual Task<HttpResponseMessage> HttpDelete(object form) =>
             throw new HttpResponseException(HttpStatusCode.MethodNotAllowed);
     }
 }

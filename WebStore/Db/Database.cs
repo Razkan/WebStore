@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Linq.Expressions;
+﻿using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace WebStore.Db
@@ -25,8 +22,6 @@ namespace WebStore.Db
             //var user = Instance.Select<User>("dd");
         }
 
-        //public static T Select<T>(string id) where T : class => Instance.Select<T>(id: id);
-
         public static T Select<T>(params object[] args) where T : class => Instance.Select<T>(args: args);
 
         public static async Task<T> SelectAsync<T>(params object[] args) where T : class =>
@@ -42,8 +37,8 @@ namespace WebStore.Db
         public static async Task<bool> ContainsAsync<T>(params object[] args) where T : class =>
             await Instance.ContainsAsync<T>(args: args);
 
-        public static IEnumerable<T> Where<T>(Expression<Func<T, bool>> predicate) where T : class =>
-            Instance.SelectAll<T>().AsQueryable().Where(predicate);
+        public static async Task<IEnumerable<T>> SelectAllAsync<T>(params object[] args) where T : class =>
+            await Instance.SelectAllAsync<T>(args);
 
         public static void Insert<T>(T entity) where T : class => Instance.Insert(entity);
 

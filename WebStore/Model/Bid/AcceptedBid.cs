@@ -1,5 +1,4 @@
 ﻿using WebStore.Model.Store;
-using WebStore.Model.Users;
 
 namespace WebStore.Model.Bid
 {

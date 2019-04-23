@@ -1,5 +1,5 @@
 ﻿using System;
-using WebStore.Db;
+using WebStore.Db.Attribute;
 using WebStore.Helpers;
 using WebStore.Model.Accounts;
 

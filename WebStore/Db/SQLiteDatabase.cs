@@ -7,6 +7,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
+using WebStore.Db.Attribute;
 using static WebStore.Configuration;
 
 namespace WebStore.Db
@@ -28,9 +29,8 @@ namespace WebStore.Db
         public void Run()
         {
             Setup();
-            CreateTable();
+            CreateTables();
         }
-
 
         private void Setup()
         {
@@ -43,7 +43,7 @@ namespace WebStore.Db
             if (!File.Exists(DbFile)) SQLiteConnection.CreateFile(DbFile);
         }
 
-        private static void CreateTable()
+        private static void CreateTables()
         {
             var assembly = AppDomain.CurrentDomain.GetAssemblies()
                 .SingleOrDefault(a => a.GetName().Name == nameof(WebStore));
@@ -143,6 +143,22 @@ namespace WebStore.Db
         public async Task<IEnumerable<T>> SelectAllAsync<T>() where T : class
         {
             var sql = $"SELECT * FROM {typeof(T).Name};";
+            return await ExecuteReaderAsync(sql, async reader =>
+            {
+                var list = new List<T>();
+                while (await reader.ReadAsync())
+                {
+                    list.Add(ToObject<T>(reader));
+                }
+
+                return list;
+            }).Unwrap();
+        }
+
+        public async Task<IEnumerable<T>> SelectAllAsync<T>(params object[] args) where T : class
+        {
+            var sql = $"SELECT * FROM {typeof(T).Name} " +
+                      $"WHERE {string.Join(" AND ", args)};";
             return await ExecuteReaderAsync(sql, async reader =>
             {
                 var list = new List<T>();
@@ -362,6 +378,10 @@ namespace WebStore.Db
                             return TimeSpan.Parse(value.ToString());
                         case var _ when IsForeignKey(pi):
                             return InternalSelect(pi, value);
+                        case var _ when IsUShort(pi):
+                            return ushort.Parse(value.ToString());
+                        case var _ when IsBool(pi):
+                            return bool.Parse(value.ToString());
                         default:
                             return value;
                     }
@@ -404,6 +424,10 @@ namespace WebStore.Db
             entity.GetType().GetProperty(Id)?.GetValue(entity).ToString();
 
         private static bool IsDateTime(PropertyInfo pi) => pi.PropertyType == typeof(DateTime);
+
+        private static bool IsUShort(PropertyInfo pi) => pi.PropertyType == typeof(ushort);
+
+        private static bool IsBool(PropertyInfo pi) => pi.PropertyType == typeof(bool);
 
         private static bool IsTimeSpan(PropertyInfo pi) => pi.PropertyType == typeof(TimeSpan);
 

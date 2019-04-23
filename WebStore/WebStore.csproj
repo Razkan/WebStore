@@ -130,21 +130,25 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="API\AccountController.cs" />
+    <Compile Include="API\ApiExtensions.cs" />
+    <Compile Include="API\Security\AuthorizationJsonApiController.cs" />
     <Compile Include="API\Form\AccountForm.cs" />
+    <Compile Include="API\Security\AccountAuthorization.cs" />
+    <Compile Include="API\Security\IAuthorization.cs" />
     <Compile Include="API\SessionController.cs" />
     <Compile Include="API\JsonApiController.cs" />
+    <Compile Include="API\WebhookController.cs" />
     <Compile Include="App_Start\WebApiConfig.cs" />
     <Compile Include="API\UserController.cs" />
-    <Compile Include="API\ValuesController.cs" />
     <Compile Include="Configuration.cs" />
     <Compile Include="Db\Database.cs" />
     <Compile Include="Db\IDatabase.cs" />
-    <Compile Include="Db\KeyAttribute.cs" />
+    <Compile Include="Db\Attribute\KeyAttribute.cs" />
     <Compile Include="Db\Repository\IRepository.cs" />
     <Compile Include="Db\SQLiteDatabase.cs" />
-    <Compile Include="Db\IndexedAttribute.cs" />
-    <Compile Include="Db\TableAttribute.cs" />
-    <Compile Include="Db\UniqueAttribute.cs" />
+    <Compile Include="Db\Attribute\IndexedAttribute.cs" />
+    <Compile Include="Db\Attribute\TableAttribute.cs" />
+    <Compile Include="Db\Attribute\UniqueAttribute.cs" />
     <Compile Include="Global.asax.cs">
       <DependentUpon>Global.asax</DependentUpon>
     </Compile>
@@ -168,9 +172,12 @@
     <Compile Include="Model\User\IUser.cs" />
     <Compile Include="Model\User\SystemUser.cs" />
     <Compile Include="Model\User\User.cs" />
+    <Compile Include="Model\Webhook\Webhook.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Startup.cs" />
+    <Compile Include="Model\Webhook\BroadcastType.cs" />
+    <Compile Include="Webhooks\Webhook.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

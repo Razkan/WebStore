@@ -15,7 +15,7 @@ namespace WebStore.API
         public async Task<object> Get(string username) => new
             {available = !await Database.ContainsAsync<Account>($"{nameof(Account.Username)}='{username}'")};
 
-        protected override async Task HttpPost(AccountForm form)
+        protected override async Task<HttpResponseMessage> HttpPost(AccountForm form)
         {
             if (string.IsNullOrWhiteSpace(form.Username))
                 throw new HttpResponseException(Request.CreateErrorResponse(HttpStatusCode.BadRequest,
@@ -29,7 +29,7 @@ namespace WebStore.API
 
             await Database.InsertAsync(Account.Make(form.Username, form.Password, WSUser.Make()));
 
-            Request.CreateResponse(HttpStatusCode.OK);
+            return Request.CreateResponse(HttpStatusCode.OK);
         }
     }
 }

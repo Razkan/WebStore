@@ -1,4 +1,4 @@
-﻿using WebStore.Db;
+﻿using WebStore.Db.Attribute;
 using WebStore.Model.Users;
 
 namespace WebStore.Model.Accounts
@@ -11,10 +11,6 @@ namespace WebStore.Model.Accounts
     //[Indexed("???")]
     public class Account : IAccount
     {
-        public Account()
-        {
-        }
-
         public static Account Make(string username, string password, User user)
         {
             return new Account
