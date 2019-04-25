@@ -6,8 +6,10 @@ using System.Threading.Tasks;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using WebStore.Db;
+using WebStore.Model.Product;
 using WebStore.Model.Webhooks;
 using DbWebhook = WebStore.Model.Webhooks.Webhook;
+using Task = System.Threading.Tasks.Task;
 
 namespace WebStore.Webhooks
 {
@@ -20,10 +22,14 @@ namespace WebStore.Webhooks
             Client = new HttpClient();
         }
 
-        public static async Task Broadcast<T>(T obj, BroadcastType type) where T : class
+        public static async Task Broadcast<T>(T obj, BroadcastType type) where T : Product
         {
-            var connections = (await Database.SelectAllAsync<DbWebhook>())
-                .Where(e => !e.Suspended)
+            var connections = (await Task.WhenAll((await Database.SelectAllAsync<WebhookSubscription>(
+                        $"{nameof(WebhookSubscription.Category)}='{Category.GetProductCategory(obj)}'",
+                        $"_{type.ToString()}='True'"))
+                    .Select(async subscription => await Database.SelectAsync<DbWebhook>(
+                        $"{nameof(DbWebhook.Account)}='{subscription.Account}'",
+                        $"{nameof(DbWebhook.Suspended)}='False'"))))
                 .Select(hook => new WebhookConnection(hook, type, obj))
                 .ToList();
 
@@ -63,8 +69,9 @@ namespace WebStore.Webhooks
 
             public async Task Start()
             {
-                var uri = new Uri($"https://{Webhook.IPEndpoint}:{Webhook.PortEndpoint}/{Webhook.PathEndpoint}");
-                var content = new StringContent(JsonConvert.SerializeObject(new {Type = BroadcastType, Object = Obj}),
+                var endpoint = Webhook.Endpoint;
+                var uri = new Uri($"https://{endpoint.IPAddress}:{endpoint.Port}/{endpoint.Path}");
+                var content = new StringContent(JsonConvert.SerializeObject(new {Type = BroadcastType, Entity = Obj}),
                     Encoding.UTF8, "application/json");
 
                 while (!(await SendAsync(uri, content)).IsSuccessStatusCode && Retry++ < MaxRetries)

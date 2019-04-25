@@ -159,6 +159,7 @@
     <Compile Include="Model\Bid\AuctionBid.cs" />
     <Compile Include="Model\Bid\Biddable.cs" />
     <Compile Include="Model\Identifiable.cs" />
+    <Compile Include="Model\Product\Category.cs" />
     <Compile Include="Model\Product\Good.cs" />
     <Compile Include="Model\Product\Product.cs" />
     <Compile Include="Model\Product\Service.cs" />

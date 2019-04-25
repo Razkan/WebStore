@@ -3,10 +3,9 @@ using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Converters;
 using WebStore.Db;
 using WebStore.Model.Webhooks;
+using DbCategory = WebStore.Model.Product.Category;
 
 namespace WebStore.API
 {
@@ -22,32 +21,26 @@ namespace WebStore.API
                 return new
                 {
                     Uri = "",
-                    IPEndpoint = "",
-                    PortEndpoint = (ushort) 0,
-                    PathEndpoint = "",
+                    Endpoint = new WebhookEndpoint(),
                     Suspended = false,
                     Categories = new string[] { }
                 };
             }
 
-            var categories =
-                await Database.SelectAllAsync<WebhookCategory>($"{nameof(WebhookCategory.Webhook)}='{webhook.Id}'");
+            var categories = await Database.SelectAllAsync<WebhookSubscription>(
+                $"{nameof(WebhookSubscription.Account)}='{account.Id}'");
 
             return new
             {
-                Uri = $"https://{webhook.IPEndpoint}:{webhook.PortEndpoint}/{webhook.PathEndpoint}",
-                webhook.IPEndpoint,
-                webhook.PortEndpoint,
-                webhook.PathEndpoint,
-                webhook.Suspended,
+                Uri = $"https://{webhook.Endpoint.IPAddress}:{webhook.Endpoint.Port}/{webhook.Endpoint.Path}",
+                webhook.Endpoint,
                 Categories = categories.Select(category => new
-                    {
-                        category.Id,
-                        Insert = category._Insert,
-                        Update = category._Update,
-                        Delete = category._Delete
-
-                    })
+                {
+                    category.Id,
+                    Insert = category._Insert,
+                    Update = category._Update,
+                    Delete = category._Delete
+                })
             };
         }
 
@@ -60,15 +53,15 @@ namespace WebStore.API
                 return Request.CreateResponse(HttpStatusCode.BadRequest, "A webhook already exists for this user");
             }
 
-            var webhook = Webhook.Make(account, form.IPEndpoint, ushort.Parse(form.PortEndpoint),
-                form.PathEndpoint);
-            await Database.InsertAsync(webhook);
+            var endpoint = form.Endpoint;
+            await Database.InsertAsync(Webhook.Make(account, endpoint.IPAddress, ushort.Parse(endpoint.Port),
+                endpoint.Path));
 
             foreach (var category in form.Categories)
             {
-                var operations = category.Operations.ToList();
-                await Database.InsertAsync(WebhookCategory.Make(category.Id, webhook, operations.Contains(BroadcastType.Insert),
-                    operations.Contains(BroadcastType.Update), operations.Contains(BroadcastType.Delete)));
+                await Database.InsertAsync(WebhookSubscription.Make(account,
+                    await Database.SelectAsync<DbCategory>(category.Id), category.Insert, category.Update,
+                    category.Delete));
             }
 
             return Request.CreateResponse(HttpStatusCode.OK);
@@ -80,15 +73,30 @@ namespace WebStore.API
             var hook = await Database.SelectAsync<Webhook>($"{nameof(Webhook.Account)}='{account.Id}'");
             if (hook == null)
             {
-                await Database.InsertAsync(Webhook.Make(account, form.IPEndpoint, ushort.Parse(form.PortEndpoint),
-                    form.PathEndpoint));
+                var endpoint = form.Endpoint;
+                await Database.InsertAsync(Webhook.Make(account, endpoint.IPAddress, ushort.Parse(endpoint.Port),
+                    endpoint.Path));
             }
             else
             {
-                hook.IPEndpoint = form.IPEndpoint;
-                hook.PortEndpoint = ushort.Parse(form.PortEndpoint);
-                hook.PathEndpoint = form.PathEndpoint;
-                await Database.UpdateAsync(hook);
+                var endpoint = form.Endpoint;
+                hook.Endpoint.IPAddress = endpoint.IPAddress;
+                hook.Endpoint.Port = ushort.Parse(endpoint.Port);
+                hook.Endpoint.Path = endpoint.Path;
+                await Database.UpdateAsync(hook.Endpoint);
+            }
+
+            foreach (var subscription in await Database.SelectAllAsync<WebhookSubscription>(
+                $"{nameof(WebhookSubscription.Account)}='{account.Id}'"))
+            {
+                await Database.DeleteAsync(subscription);
+            }
+
+            foreach (var category in form.Categories)
+            {
+                await Database.InsertAsync(WebhookSubscription.Make(account,
+                    await Database.SelectAsync<DbCategory>(category.Id), category.Insert, category.Update,
+                    category.Delete));
             }
 
             return Request.CreateResponse(HttpStatusCode.OK);
@@ -105,18 +113,29 @@ namespace WebStore.API
 
     public class WebhookForm
     {
-        public string IPEndpoint { get; set; } // 127.0.0.1
-        public string PortEndpoint { get; set; } // 5000
-        public string PathEndpoint { get; set; } // /webstore_callback
+        //public string IPEndpoint { get; set; } // 127.0.0.1
+        //public string PortEndpoint { get; set; } // 5000
+        //public string PathEndpoint { get; set; } // /webstore_callback
+        public WebhookEndpoint Endpoint { get; set; }
 
         public IEnumerable<Category> Categories { get; set; }
 
         public class Category
         {
             public string Id { get; set; }
+            public bool Insert { get; set; }
+            public bool Update { get; set; }
+            public bool Delete { get; set; }
 
-            [JsonProperty("Operations", ItemConverterType = typeof(StringEnumConverter))]
-            public BroadcastType[] Operations { get; set; }
+            //[JsonProperty("Operations", ItemConverterType = typeof(StringEnumConverter))]
+            //public BroadcastType[] Operations { get; set; }
+        }
+
+        public class WebhookEndpoint
+        {
+            public string IPAddress { get; set; } // 127.0.0.1
+            public string Port { get; set; } // 5000
+            public string Path { get; set; } // /webstore_callback
         }
     }
 }

@@ -1,10 +1,8 @@
 ﻿using System;
 using System.Linq;
 using System.Net;
-using System.Net.Http;
 using System.Threading.Tasks;
 using System.Web.Http;
-using WebStore.API.Security;
 using WebStore.Db;
 using WebStore.Model.Accounts;
 using WebStore.Model.Session;
