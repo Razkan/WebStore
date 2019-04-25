@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
@@ -102,12 +103,17 @@ namespace WebStore.API
             return Request.CreateResponse(HttpStatusCode.OK);
         }
 
+#pragma warning disable 1998
         protected override async Task<HttpResponseMessage> HttpDelete(WebhookForm form)
+#pragma warning restore 1998
         {
-            var account = await Request.GetAccount();
-            var hook = await Database.SelectAsync<Webhook>($"{nameof(Webhook.Account)}='{account.Id}'");
+            // TODO Add delete for a wehbook
+            throw new NotImplementedException();
 
-            return Request.CreateResponse(HttpStatusCode.OK);
+            //var account = await Request.GetAccount();
+            //var hook = await Database.SelectAsync<Webhook>($"{nameof(Webhook.Account)}='{account.Id}'");
+
+            //return Request.CreateResponse(HttpStatusCode.OK);
         }
     }
 

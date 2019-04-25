@@ -1,5 +1,4 @@
-﻿using WebStore.Db;
-using WebStore.Db.Attribute;
+﻿using WebStore.Db.Attribute;
 
 namespace WebStore.Model.Users
 {

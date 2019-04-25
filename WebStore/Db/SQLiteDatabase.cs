@@ -12,6 +12,7 @@ using static WebStore.Configuration;
 
 namespace WebStore.Db
 {
+    // TODO Update to prepared statements https://github.com/OWASP/CheatSheetSeries/blob/d8edfc0659e986829dec36ee0ee093688f0bf694/cheatsheets/Query_Parameterization_Cheat_Sheet.md
     public class SQLiteDatabase : IDatabase
     {
         private const string INTEGER = nameof(INTEGER);
@@ -57,8 +58,11 @@ namespace WebStore.Db
                               $"{PropertiesToColumns(type)});";
                     ExecuteNonQuery(sql);
                 }
+#pragma warning disable 168
                 catch (Exception e)
+#pragma warning restore 168
                 {
+                    // TODO log errors
                 }
             }
         }
@@ -295,8 +299,11 @@ namespace WebStore.Db
                         return func(reader);
                     }
                 }
+#pragma warning disable 168
                 catch (Exception e)
+#pragma warning restore 168
                 {
+                    // TODO log errors
                     // Log errors
                     return default;
                 }
@@ -313,8 +320,11 @@ namespace WebStore.Db
                 {
                     cmd.ExecuteNonQuery();
                 }
+#pragma warning disable 168
                 catch (Exception e)
+#pragma warning restore 168
                 {
+                    // TODO log errors
                     // Log errors
                 }
             }
@@ -333,8 +343,12 @@ namespace WebStore.Db
                         return func(reader);
                     }
                 }
+#pragma warning disable 168
                 catch (Exception e)
+#pragma warning restore 168
                 {
+
+                    // TODO log errors
                     // Log errors
                     return default;
                 }
@@ -352,8 +366,11 @@ namespace WebStore.Db
                 {
                     await cmd.ExecuteNonQueryAsync();
                 }
+#pragma warning disable 168
                 catch (Exception e)
+#pragma warning restore 168
                 {
+                    // TODO log errors
                     // Log errors
                 }
             }

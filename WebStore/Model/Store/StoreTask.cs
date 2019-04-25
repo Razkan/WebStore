@@ -1,5 +1,6 @@
 ﻿using System;
 using WebStore.Model.Users;
+// ReSharper disable UnassignedGetOnlyAutoProperty
 
 namespace WebStore.Model.Store
 {

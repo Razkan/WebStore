@@ -173,7 +173,10 @@
     <Compile Include="Model\User\IUser.cs" />
     <Compile Include="Model\User\SystemUser.cs" />
     <Compile Include="Model\User\User.cs" />
+    <Compile Include="Model\Webhook\IWebhook.cs" />
     <Compile Include="Model\Webhook\Webhook.cs" />
+    <Compile Include="Model\Webhook\WebhookEndpoint.cs" />
+    <Compile Include="Model\Webhook\WebhookSubscription.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Startup.cs" />

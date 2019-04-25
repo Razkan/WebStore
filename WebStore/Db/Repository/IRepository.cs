@@ -3,6 +3,7 @@ using WebStore.Model.Users;
 
 namespace WebStore.Db.Repository
 {
+    // TODO change sealed database class to repositories, can add specific queries within each
     public interface IRepository<T> where T : class
     {
         T Select(string id);
