@@ -28,7 +28,7 @@ namespace WebStore.API
         public static async Task<TForm> ReadFromJson<TForm>(this HttpRequestMessage request) =>
             JsonConvert.DeserializeObject<TForm>(await request.Content.ReadAsStringAsync());
 
-        public static async Task<HttpResponseMessage> ToModelError(this ApiController controller, HttpStatusCode code)
+        public static async Task<HttpResponseMessage> CreateModelErrorResponse(this ApiController controller, HttpStatusCode code)
         {
             var response = controller.Request.CreateErrorResponse(code, controller.ModelState);
             return await Task.FromResult(response);
