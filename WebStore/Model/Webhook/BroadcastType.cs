@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace WebStore.Model.Webhooks
+﻿namespace WebStore.Model.Webhooks
 {
     public enum BroadcastType
     {

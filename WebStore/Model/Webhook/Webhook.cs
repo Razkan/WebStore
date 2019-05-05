@@ -1,6 +1,4 @@
-﻿using Newtonsoft.Json;
-using WebStore.API;
-using WebStore.Db.Attribute;
+﻿using WebStore.Db.Attribute;
 using WebStore.Model.Accounts;
 
 namespace WebStore.Model.Webhooks

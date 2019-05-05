@@ -3,9 +3,9 @@ using System.Threading.Tasks;
 
 namespace WebStore.Db
 {
-    public sealed class Database
+    public static class Database
     {
-        private static IDatabase Instance { get; set; }
+        internal static IDatabase Instance { get; set; }
 
         public static void Register()
         {

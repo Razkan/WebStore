@@ -2,10 +2,9 @@
 using System.Linq;
 using System.Net.Http;
 using System.Text;
-using System.Threading.Tasks;
 using Newtonsoft.Json;
-using Newtonsoft.Json.Converters;
 using WebStore.Db;
+using WebStore.Db.Repository;
 using WebStore.Model.Product;
 using WebStore.Model.Webhooks;
 using DbWebhook = WebStore.Model.Webhooks.Webhook;
@@ -13,28 +12,42 @@ using Task = System.Threading.Tasks.Task;
 
 namespace WebStore.Webhooks
 {
-    public sealed class Webhook
+    public static class Webhook
     {
         private static HttpClient Client { get; }
+
+        private static WebhookRepository WebhookRepository { get; }
+        private static WebhookSubscriptionRepository WebhookSubscriptionRepository { get; }
 
         static Webhook()
         {
             Client = new HttpClient();
+            WebhookRepository = new WebhookRepository(Database.Instance);
+            WebhookSubscriptionRepository = new WebhookSubscriptionRepository(Database.Instance);
         }
 
-        public static async Task Broadcast<T>(T obj, BroadcastType type) where T : Product
+        public static async Task Broadcast<T>(T obj, BroadcastType broadcastType) where T : Product
         {
-            var connections = (await Task.WhenAll((await Database.SelectAllAsync<WebhookSubscription>(
-                        $"{nameof(WebhookSubscription.Category)}='{Category.GetProductCategory(obj)}'",
-                        $"_{type.ToString()}='True'"))
-                    .Select(async subscription => await Database.SelectAsync<DbWebhook>(
-                        $"{nameof(DbWebhook.Account)}='{subscription.Account}'",
-                        $"{nameof(DbWebhook.Suspended)}='False'"))))
-                .Select(hook => new WebhookConnection(hook, type, obj))
+            var connections = (await Task.WhenAll(
+                    (await WebhookSubscriptionRepository.AllByCategoryAndTypeAsync(obj.Category, broadcastType))
+                    .Select(async subscription =>
+                        await WebhookRepository.ByAccountNotSuspendedAsync(subscription.Account))))
+                .Select(hook => new WebhookConnection(hook, broadcastType, obj))
                 .ToList();
 
+            //var connections = (await Task.WhenAll(())
+
+            //var connections = (await Task.WhenAll((await Database.SelectAllAsync<WebhookSubscription>(
+            //            $"{nameof(WebhookSubscription.Category)}='{obj.Category.Id}'",
+            //            $"_{broadcastType.ToString()}='True'"))
+            //        .Select(async subscription => await Database.SelectAsync<DbWebhook>(
+            //            $"{nameof(DbWebhook.Account)}='{subscription.Account}'",
+            //            $"{nameof(DbWebhook.Suspended)}='False'"))))
+            //    .Select(hook => new WebhookConnection(hook, broadcastType, obj))
+            //    .ToList();
+
             var tasks = connections.Select(connection => Task.Run(connection.Start)).ToArray();
-            Task.WaitAll(tasks);
+            await Task.WhenAll(tasks);
 
             foreach (var connection in connections)
             {
@@ -52,7 +65,6 @@ namespace WebStore.Webhooks
 
             private IWebhook Webhook { get; }
 
-            [JsonConverter(typeof(StringEnumConverter))]
             private BroadcastType BroadcastType { get; }
 
             private object Obj { get; }
@@ -69,17 +81,15 @@ namespace WebStore.Webhooks
 
             public async Task Start()
             {
-                var endpoint = Webhook.Endpoint;
-                var uri = new Uri($"https://{endpoint.IPAddress}:{endpoint.Port}/{endpoint.Path}");
-                var content = new StringContent(JsonConvert.SerializeObject(new {Type = BroadcastType, Entity = Obj}),
+                var uri = new Uri(
+                    $"https://{Webhook.Endpoint.IPAddress}:{Webhook.Endpoint.Port}/{Webhook.Endpoint.Path}");
+                var content = new StringContent(
+                    JsonConvert.SerializeObject(new {Type = BroadcastType.ToString(), Entity = Obj}),
                     Encoding.UTF8, "application/json");
 
-                while (!(await SendAsync(uri, content)).IsSuccessStatusCode && Retry++ < MaxRetries)
+                while (!(await Client.PostAsync(uri, content)).IsSuccessStatusCode && Retry++ < MaxRetries)
                     await Task.Delay(TimeSpan.FromSeconds(RetryDelay));
             }
-
-            private static async Task<HttpResponseMessage> SendAsync(Uri uri, HttpContent content) =>
-                await Client.PostAsync(uri, content);
         }
     }
 }

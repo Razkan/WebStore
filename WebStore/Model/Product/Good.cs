@@ -14,5 +14,7 @@ namespace WebStore.Model.Product
         public string Id { get; set; }
 
         //public string SellerId { get; }
+        [ForeignKey]
+        public Category Category { get; set; }
     }
 }

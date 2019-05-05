@@ -1,61 +1,33 @@
 ﻿using System.Collections.Generic;
-using WebStore.Model.Users;
+using System.Threading.Tasks;
 
 namespace WebStore.Db.Repository
 {
     // TODO change sealed database class to repositories, can add specific queries within each
     public interface IRepository<T> where T : class
     {
-        T Select(string id);
+        //T Select(string id);
 
-        IEnumerable<T> SelectAll();
+        //IEnumerable<T> SelectAll();
 
-        void Insert(T entity);
+        //void Insert(T entity);
 
-        void Update(T entity);
+        //void Update(T entity);
 
-        void Delete(T entity);
-    }
+        //void Delete(T entity);
 
-    public interface IUserRepository : IRepository<User>
-    {
-    }
+        Task<T> SelectAsync(params object[] args);
 
-    public interface ISystemUserRepository : IRepository<SystemUser>
-    {
-    }
+        Task<IEnumerable<T>> SelectAllAsync();
 
-    public class Repository<T> : IRepository<T> where T : class
-    {
-        private IDatabase Entities { get; }
+        Task<bool> ContainsAsync(params object[] args);
 
-        protected Repository(IDatabase context)
-        {
-            Entities = context;
-        }
+        Task<IEnumerable<T>> SelectAllAsync(params object[] args);
 
-        public T Select(string id) => Entities.Select<T>(id);
+        Task InsertAsync(T entity);
 
-        public IEnumerable<T> SelectAll() => Entities.SelectAll<T>();
+        Task UpdateAsync(T entity);
 
-        public void Insert(T entity) => Entities.Insert(entity);
-
-        public void Update(T entity) => Entities.Update(entity);
-
-        public void Delete(T entity) => Entities.Delete(entity);
-    }
-
-    public class UserRepository : Repository<User>, IUserRepository
-    {
-        public UserRepository(IDatabase context) : base(context)
-        {
-        }
-    }
-
-    public class SystemUserRepository : Repository<SystemUser>, ISystemUserRepository
-    {
-        public SystemUserRepository(IDatabase context) : base(context)
-        {
-        }
+        Task DeleteAsync(T entity);
     }
 }
