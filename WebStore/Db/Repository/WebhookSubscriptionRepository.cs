@@ -11,7 +11,7 @@ namespace WebStore.Db.Repository
         {
         }
 
-        public async Task<IEnumerable<WebhookSubscription>> AllByCategoryAndTypeAsync(Category Category,
+        public async Task<IEnumerable<WebhookSubscription>> AllByCategoryAndBroadcastTypeAsync(Category Category,
             BroadcastType broadcastType) => await Context.SelectAllAsync<WebhookSubscription>(
             $"{nameof(WebhookSubscription.Category)}='{Category.Id}'",
             $"_{broadcastType.ToString()}='True'");

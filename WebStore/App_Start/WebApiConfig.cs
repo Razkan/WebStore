@@ -1,7 +1,5 @@
 ﻿using System.Linq;
-using System.Net.Http;
 using System.Web.Http;
-using HttpMethodConstraint = System.Web.Http.Routing.HttpMethodConstraint;
 
 namespace WebStore
 {

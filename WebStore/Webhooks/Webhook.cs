@@ -7,44 +7,29 @@ using WebStore.Db;
 using WebStore.Db.Repository;
 using WebStore.Model.Product;
 using WebStore.Model.Webhooks;
-using DbWebhook = WebStore.Model.Webhooks.Webhook;
 using Task = System.Threading.Tasks.Task;
 
 namespace WebStore.Webhooks
 {
     public static class Webhook
     {
-        private static HttpClient Client { get; }
-
-        private static WebhookRepository WebhookRepository { get; }
-        private static WebhookSubscriptionRepository WebhookSubscriptionRepository { get; }
+        private static IWebhookRepository WebhookRepository { get; }
+        private static IWebhookSubscriptionRepository WebhookSubscriptionRepository { get; }
 
         static Webhook()
         {
-            Client = new HttpClient();
             WebhookRepository = new WebhookRepository(Database.Instance);
             WebhookSubscriptionRepository = new WebhookSubscriptionRepository(Database.Instance);
         }
 
         public static async Task Broadcast<T>(T obj, BroadcastType broadcastType) where T : Product
         {
-            var connections = (await Task.WhenAll(
-                    (await WebhookSubscriptionRepository.AllByCategoryAndTypeAsync(obj.Category, broadcastType))
-                    .Select(async subscription =>
+            var connections = (await Task
+                    .WhenAll((await WebhookSubscriptionRepository.AllByCategoryAndBroadcastTypeAsync(obj.Category,
+                        broadcastType)).Select(async subscription =>
                         await WebhookRepository.ByAccountNotSuspendedAsync(subscription.Account))))
                 .Select(hook => new WebhookConnection(hook, broadcastType, obj))
                 .ToList();
-
-            //var connections = (await Task.WhenAll(())
-
-            //var connections = (await Task.WhenAll((await Database.SelectAllAsync<WebhookSubscription>(
-            //            $"{nameof(WebhookSubscription.Category)}='{obj.Category.Id}'",
-            //            $"_{broadcastType.ToString()}='True'"))
-            //        .Select(async subscription => await Database.SelectAsync<DbWebhook>(
-            //            $"{nameof(DbWebhook.Account)}='{subscription.Account}'",
-            //            $"{nameof(DbWebhook.Suspended)}='False'"))))
-            //    .Select(hook => new WebhookConnection(hook, broadcastType, obj))
-            //    .ToList();
 
             var tasks = connections.Select(connection => Task.Run(connection.Start)).ToArray();
             await Task.WhenAll(tasks);
@@ -60,6 +45,13 @@ namespace WebStore.Webhooks
 
         private class WebhookConnection
         {
+            static WebhookConnection()
+            {
+                Client = new HttpClient();
+            }
+
+            private static HttpClient Client { get; }
+
             private const int MaxRetries = 3;
             private const int RetryDelay = 30;
 
@@ -71,6 +63,7 @@ namespace WebStore.Webhooks
             private int Retry { get; set; }
 
             public bool Failed => Retry == 3;
+
 
             public WebhookConnection(IWebhook webhook, BroadcastType broadcastType, object obj)
             {

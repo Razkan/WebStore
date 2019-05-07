@@ -3,8 +3,6 @@ using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
 using System.Web.Http;
-using System.Web.Http.ModelBinding;
-using Newtonsoft.Json;
 using WebStore.Db;
 using DbAccount = WebStore.Model.Accounts.Account;
 
@@ -25,10 +23,11 @@ namespace WebStore.API
                 $"{nameof(DbAccount.Password)}='{password}'");
         }
 
-        public static async Task<TForm> ReadFromJson<TForm>(this HttpRequestMessage request) =>
-            JsonConvert.DeserializeObject<TForm>(await request.Content.ReadAsStringAsync());
+        //public static async Task<TForm> ReadFromJson<TForm>(this HttpRequestMessage request) =>
+        //    JsonConvert.DeserializeObject<TForm>(await request.Content.ReadAsStringAsync());
 
-        public static async Task<HttpResponseMessage> CreateModelErrorResponse(this ApiController controller, HttpStatusCode code)
+        public static async Task<HttpResponseMessage> CreateModelErrorResponse(this ApiController controller,
+            HttpStatusCode code)
         {
             var response = controller.Request.CreateErrorResponse(code, controller.ModelState);
             return await Task.FromResult(response);
