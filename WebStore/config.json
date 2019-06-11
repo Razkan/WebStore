@@ -1,0 +1,17 @@
+{
+  "Databases": [
+    {
+      "Type": "SQLite",
+      "Directory": "c:\\webstore\\database\\sqlite",
+      "Name": "MyDatabase.sqlite",
+      "Args": "Data Source=c:\\webstore\\sqlite\\MyDatabase.sqlite;Version=3;"
+    },
+    {
+      "Type": "MySQL",
+      "Directory": "c:\\webstore\\database\\mysql",
+      "Name": "MyDatabase.mysql",
+      "Args": ""
+    }
+  ]	
+}
+

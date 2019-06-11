@@ -12,5 +12,10 @@ namespace WebStore.Model.Users
         public string Id { get; private set; }
 
         public static User Make() => new User {Id = Identification.Generate()};
+
+        public void Commit()
+        {
+            throw new System.NotImplementedException();
+        }
     }
 }

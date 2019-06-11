@@ -9,5 +9,10 @@ namespace WebStore.Model.Product
 
         [ForeignKey]
         public Category Category { get; set; }
+
+        public void Commit()
+        {
+            throw new System.NotImplementedException();
+        }
     }
 }

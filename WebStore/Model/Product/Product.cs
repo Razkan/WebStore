@@ -5,7 +5,7 @@
         Category Category { get; set; }
     }
 
-    public interface Product : Identifiable, ICategorized
+    public interface Product : IDatabaseEntity, ICategorized
     {
     }
 }

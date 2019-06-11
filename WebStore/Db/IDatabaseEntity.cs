@@ -5,7 +5,7 @@ namespace WebStore.Model
     /// <summary>
     /// Unique identification
     /// </summary>
-    public interface Identifiable
+    public interface IDatabaseEntity
     {
         [PrimaryKey]
         string Id { get; }

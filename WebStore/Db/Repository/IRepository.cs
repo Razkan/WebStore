@@ -1,10 +1,11 @@
 ﻿using System.Collections.Generic;
 using System.Threading.Tasks;
+using WebStore.Model;
 
 namespace WebStore.Db.Repository
 {
     // TODO change sealed database class to repositories, can add specific queries within each
-    public interface IRepository<T> where T : class
+    public interface IRepository<T> where T : class, IDatabaseEntity
     {
         //T Select(string id);
 

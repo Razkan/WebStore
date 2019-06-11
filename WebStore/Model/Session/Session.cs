@@ -5,7 +5,7 @@ using WebStore.Model.Accounts;
 
 namespace WebStore.Model.Session
 {
-    public interface ISession : Identifiable
+    public interface ISession : IDatabaseEntity
     {
         Account Account { get; }
         TimeSpan TTL { get; }
@@ -53,6 +53,11 @@ namespace WebStore.Model.Session
                 LastAction = DateTime.UtcNow,
                 Token = SessionToken.Generate()
             };
+        }
+
+        public void Commit()
+        {
+            throw new NotImplementedException();
         }
     }
 

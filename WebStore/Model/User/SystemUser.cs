@@ -7,5 +7,10 @@ namespace WebStore.Model.Users
     {
         [PrimaryKey]
         public string Id { get; private set; }
+
+        public void Commit()
+        {
+            throw new System.NotImplementedException();
+        }
     }
 }

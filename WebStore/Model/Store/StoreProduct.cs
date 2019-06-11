@@ -3,7 +3,7 @@ using WebStore.Model.Users;
 
 namespace WebStore.Model.Store
 {
-    public interface StoreProduct : Identifiable
+    public interface StoreProduct : IDatabaseEntity
     {
         double Price { get; set; }
 

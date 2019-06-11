@@ -3,7 +3,7 @@
 namespace WebStore.Model.Product
 {
     [Table]
-    public class Category : Identifiable
+    public class Category : IDatabaseEntity
     {
         [PrimaryKey]
         public string Id { get; private set; }
@@ -14,6 +14,11 @@ namespace WebStore.Model.Product
         public static string GetProductCategory<T>(T obj) where T : Product
         {
             return "";
+        }
+
+        public void Commit()
+        {
+            throw new System.NotImplementedException();
         }
     }
 }

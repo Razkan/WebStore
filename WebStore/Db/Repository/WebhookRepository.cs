@@ -10,8 +10,9 @@ namespace WebStore.Db.Repository
         {
         }
 
-        public async Task<DbWebhook> ByAccountNotSuspendedAsync(Account account) => await Database.SelectAsync<DbWebhook>(
-            $"{nameof(DbWebhook.Account)}='{account.Id}'",
-            $"{nameof(DbWebhook.Suspended)}='False'");
+        public async Task<DbWebhook> ByAccountNotSuspendedAsync(Account account) =>
+            await Context.SelectAsync<DbWebhook>(
+                $"{nameof(DbWebhook.Account)}='{account.Id}'",
+                $"{nameof(DbWebhook.Suspended)}='False'");
     }
 }

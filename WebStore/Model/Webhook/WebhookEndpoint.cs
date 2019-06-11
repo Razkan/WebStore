@@ -3,8 +3,10 @@
 namespace WebStore.Model.Webhooks
 {
     [Table]
-    public class WebhookEndpoint
+    public class WebhookEndpoint : IDatabaseEntity
     {
+        public string Id { get; private set; }
+
         public string IPAddress { get; set; }
 
         public ushort Port { get; set; }
@@ -15,6 +17,7 @@ namespace WebStore.Model.Webhooks
         {
             return new WebhookEndpoint
             {
+                Id = Identification.Generate(),
                 IPAddress = ipEndpoint,
                 Port = port,
                 Path = pathEndpoint,

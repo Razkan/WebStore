@@ -5,7 +5,7 @@ using WebStore.Model.Product;
 namespace WebStore.Model.Webhooks
 {
     [Table]
-    public class WebhookSubscription
+    public class WebhookSubscription : IDatabaseEntity
     {
         [PrimaryKey]
         public string Id { get; private set; }

@@ -1,6 +1,6 @@
 ﻿namespace WebStore.Model.Users
 {
-    public interface IUser : Identifiable
+    public interface IUser : IDatabaseEntity
     {
     }
 }

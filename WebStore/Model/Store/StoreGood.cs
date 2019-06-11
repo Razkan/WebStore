@@ -15,5 +15,10 @@ namespace WebStore.Model.Store
         public DateTime CreatedAt { get; }
 
         public string Id { get; }
+
+        public void Commit()
+        {
+            throw new NotImplementedException();
+        }
     }
 }

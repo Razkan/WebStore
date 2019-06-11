@@ -3,7 +3,7 @@ using WebStore.Model.Users;
 
 namespace WebStore.Model.Accounts
 {
-    public interface IAccount : Identifiable
+    public interface IAccount : IDatabaseEntity
     {
     }
 

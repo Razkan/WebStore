@@ -1,16 +1,21 @@
-﻿using System.Collections.Generic;
-using System.Threading.Tasks;
+﻿using System;
+using System.Collections.Generic;
 
 namespace WebStore.Db
 {
     public static class Database
     {
-        internal static IDatabase Instance { get; set; }
+        private const string SQLite = nameof(SQLite);
+        private const string MySQL = nameof(MySQL);
+
+        private static ICollection<IDatabase> Instances { get; set; }
+
+        internal static IDatabase Instance { get; private set; }
 
         public static void Register()
         {
-            Instance = new SQLiteDatabase();
-            Instance.Run();
+            Setup();
+            Run();
 
             //var good = new Good { Id = "abc" };
             //Instance.Insert(good);
@@ -22,34 +27,32 @@ namespace WebStore.Db
             //var user = Instance.Select<User>("dd");
         }
 
-        public static T Select<T>(params object[] args) where T : class => Instance.Select<T>(args: args);
+        private static void Setup()
+        {
+            Instances = new List<IDatabase>();
+            foreach (var database in Configuration.Databases)
+            {
+                string type = database.Type;
+                string directory = database.Directory;
+                string name = database.Name;
+                string args = database.Args;
+                var file = directory + "\\" + name;
 
-        public static async Task<T> SelectAsync<T>(params object[] args) where T : class =>
-            await Instance.SelectAsync<T>(args: args);
+                switch (type)
+                {
+                    case SQLite:
+                        Instances.Add(SQLiteDatabase.Make(SqLiteConfiguration.Make(directory, name, file, args)));
+                        break;
+                    case MySQL:
+                        Instances.Add(MySQLDatabase.Make(MySqlConfiguration.Make(directory, name, file, args)));
+                        break;
+                    default: throw new ArgumentOutOfRangeException(type);
+                }
+            }
 
-        public static IEnumerable<T> SelectAll<T>() where T : class => Instance.SelectAll<T>();
+            Instance = new MultiDatabaseHandler(Instances);
+        }
 
-        public static async Task<IEnumerable<T>> SelectAllAsync<T>() where T : class =>
-            await Instance.SelectAllAsync<T>();
-
-        public static bool Contains<T>(params object[] args) where T : class => Instance.Contains<T>(args: args);
-
-        public static async Task<bool> ContainsAsync<T>(params object[] args) where T : class =>
-            await Instance.ContainsAsync<T>(args: args);
-
-        public static async Task<IEnumerable<T>> SelectAllAsync<T>(params object[] args) where T : class =>
-            await Instance.SelectAllAsync<T>(args);
-
-        public static void Insert<T>(T entity) where T : class => Instance.Insert(entity);
-
-        public static async Task InsertAsync<T>(T entity) where T : class => await Instance.InsertAsync(entity);
-
-        public static void Update<T>(T entity) where T : class => Instance.Update(entity);
-
-        public static async Task UpdateAsync<T>(T entity) where T : class => await Instance.UpdateAsync(entity);
-
-        public static void Delete<T>(T entity) where T : class => Instance.Delete(entity);
-
-        public static async Task DeleteAsync<T>(T entity) where T : class => await Instance.DeleteAsync(entity);
+        private static void Run() => Instance.Run();
     }
 }

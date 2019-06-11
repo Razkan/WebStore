@@ -7,7 +7,7 @@ namespace WebStore.Model.Store
     /// <summary>
     /// The container for all the biddable and purchasable products
     /// </summary>
-    public class Store : Identifiable
+    public class Store : IDatabaseEntity
     {
         public Store(String id)
         {
@@ -26,5 +26,10 @@ namespace WebStore.Model.Store
         public int Count() => StoreProducts.Count;
 
         public string Id { get; }
+
+        public void Commit()
+        {
+            throw new NotImplementedException();
+        }
     }
 }

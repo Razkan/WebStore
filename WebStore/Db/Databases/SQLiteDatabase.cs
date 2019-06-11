@@ -8,7 +8,6 @@ using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
 using WebStore.Db.Attribute;
-using static WebStore.Configuration;
 
 namespace WebStore.Db
 {
@@ -19,13 +18,14 @@ namespace WebStore.Db
         private const string TEXT = nameof(TEXT);
         private const string Id = nameof(Id);
 
-        private static string DbDirectory;
-        private static string DbName;
-        private static string DbFile;
-
-        private static string DbArgs;
+        private IDatabaseConfiguration Configuration { get; }
 
         private static readonly Type[] StringType = {typeof(string)};
+
+        public SQLiteDatabase(IDatabaseConfiguration configuration)
+        {
+            Configuration = configuration;
+        }
 
         public void Run()
         {
@@ -35,16 +35,11 @@ namespace WebStore.Db
 
         private void Setup()
         {
-            DbDirectory = Config.Database.Directory;
-            DbName = Config.Database.Name;
-            DbFile = DbDirectory + "\\" + DbName;
-            DbArgs = Config.Database.Args;
-
-            if (!Directory.Exists(DbDirectory)) Directory.CreateDirectory(DbDirectory);
-            if (!File.Exists(DbFile)) SQLiteConnection.CreateFile(DbFile);
+            if (!Directory.Exists(Configuration.Directory)) Directory.CreateDirectory(Configuration.Directory);
+            if (!File.Exists(Configuration.File)) SQLiteConnection.CreateFile(Configuration.File);
         }
 
-        private static void CreateTables()
+        private void CreateTables()
         {
             var assembly = AppDomain.CurrentDomain.GetAssemblies()
                 .SingleOrDefault(a => a.GetName().Name == nameof(WebStore));
@@ -55,8 +50,9 @@ namespace WebStore.Db
                 try
                 {
                     var sql = $"CREATE TABLE IF NOT EXISTS {type.Name} (" +
-                              $"{PropertiesToColumns(type)});";
-                    ExecuteNonQuery(sql);
+                              $"{CreateQueryFromProperties(type)});";
+                    var task = ExecuteNonQueryAsync(sql);
+                    Task.WaitAll(task);
                 }
 #pragma warning disable 168
                 catch (Exception e)
@@ -70,7 +66,7 @@ namespace WebStore.Db
         private static IEnumerable<Type> GetTypesWithHelpAttribute(Assembly assembly) => assembly.GetTypes()
             .Where(type => type.GetCustomAttributes(typeof(TableAttribute), true).Length > 0);
 
-        private static string PropertiesToColumns(Type t) => string.Join(", ",
+        private static string CreateQueryFromProperties(Type t) => string.Join(", ",
             t.GetProperties().Select(e =>
             {
                 if (IsPrimaryKey(e)) return $"[{e.Name}] TEXT NON NULL PRIMARY KEY";
@@ -78,7 +74,6 @@ namespace WebStore.Db
                 if (IsUnique(e)) return $"[{e.Name}] TEXT NON NULL UNIQUE";
                 return $"[{e.Name}] {ToSQLType(e.PropertyType)} NON NULL";
             }));
-
 
         private static string ToSQLType(Type t)
         {
@@ -101,23 +96,6 @@ namespace WebStore.Db
             }
         }
 
-        // ReSharper disable once PossiblyMistakenUseOfParamsMethod
-        public T Select<T>(string id) where T : class => Select<T>(args: $"id='{id}'");
-
-        public T Select<T>(params object[] args) where T : class
-        {
-            var sql = $"SELECT * FROM {typeof(T).Name} " +
-                      $"WHERE {string.Join(" AND ", args)};";
-            return ExecuteReader(sql, reader =>
-            {
-                reader.Read();
-                return reader.HasRows ? ToObject<T>(reader) : default;
-            });
-        }
-
-        // ReSharper disable once PossiblyMistakenUseOfParamsMethod
-        public async Task<T> SelectAsync<T>(string id) where T : class => await SelectAsync<T>(args: $"id='{id}'");
-
         public async Task<T> SelectAsync<T>(params object[] args) where T : class
         {
             var sql = $"SELECT * FROM {typeof(T).Name} " +
@@ -125,23 +103,8 @@ namespace WebStore.Db
             return await ExecuteReaderAsync(sql, async reader =>
             {
                 await reader.ReadAsync();
-                return reader.HasRows ? ToObject<T>(reader) : default;
+                return reader.HasRows ? await ToObjectAsync<T>(reader) : default;
             }).Unwrap();
-        }
-
-        public IEnumerable<T> SelectAll<T>() where T : class
-        {
-            var sql = $"SELECT * FROM {typeof(T).Name};";
-            return ExecuteReader(sql, reader =>
-            {
-                var list = new List<T>();
-                while (reader.Read())
-                {
-                    list.Add(ToObject<T>(reader));
-                }
-
-                return list;
-            });
         }
 
         public async Task<IEnumerable<T>> SelectAllAsync<T>() where T : class
@@ -152,7 +115,7 @@ namespace WebStore.Db
                 var list = new List<T>();
                 while (await reader.ReadAsync())
                 {
-                    list.Add(ToObject<T>(reader));
+                    list.Add(await ToObjectAsync<T>(reader));
                 }
 
                 return list;
@@ -168,26 +131,11 @@ namespace WebStore.Db
                 var list = new List<T>();
                 while (await reader.ReadAsync())
                 {
-                    list.Add(ToObject<T>(reader));
+                    list.Add(await ToObjectAsync<T>(reader));
                 }
 
                 return list;
             }).Unwrap();
-        }
-
-        // ReSharper disable once PossiblyMistakenUseOfParamsMethod
-        public bool Contains<T>(string id) where T : class => Contains<T>(args: $"id='{id}'");
-
-        public bool Contains<T>(params object[] args) where T : class
-        {
-            var sql = $"SELECT * FROM {typeof(T).Name} " +
-                      $"WHERE {string.Join(" AND ", args)} " +
-                      "LIMIT 1;";
-            return ExecuteReader(sql, reader =>
-            {
-                reader.Read();
-                return reader.HasRows;
-            });
         }
 
         // ReSharper disable once PossiblyMistakenUseOfParamsMethod
@@ -206,20 +154,9 @@ namespace WebStore.Db
             }).Unwrap();
         }
 
-
-        public void Insert<T>(T entity) where T : class
-        {
-            RecursiveInsert(entity);
-            var type = typeof(T);
-            var sql =
-                $"INSERT OR IGNORE INTO {type.Name}({GetPropertyNames(type)}) " +
-                $"VALUES('{GetPropertyValues(entity)}');";
-            ExecuteNonQuery(sql);
-        }
-
         public async Task InsertAsync<T>(T entity) where T : class
         {
-            RecursiveInsert(entity);
+            await RecursiveInsert(entity);
             var type = typeof(T);
             var sql =
                 $"INSERT OR IGNORE INTO {type.Name}({GetPropertyNames(type)}) " +
@@ -232,26 +169,16 @@ namespace WebStore.Db
         /// Recursively adds internal objects not yet stored in the db.
         /// Example: new Account(..., ..., new User()), first User would be stored in the db, then Account. 
         /// </summary>
-        private void RecursiveInsert(object entity)
+        private async Task RecursiveInsert(object entity)
         {
             foreach (var pi in entity.GetType().GetProperties())
             {
                 if (IsForeignKey(pi))
                 {
                     var obj = pi.GetValue(entity);
-                    if (!InternalContains(obj)) InternalInsert(obj);
+                    if (!await InternalContainsAsync(obj)) await InternalInsertAsync(obj);
                 }
             }
-        }
-
-        public void Update<T>(T entity) where T : class
-        {
-            var type = typeof(T);
-            var sql =
-                $"UPDATE {type.Name} " + // UPDATE User
-                $"SET {GetPropertyValuePair(entity)} " + // SET Id='5', FirstName='John', LastName='Doe'
-                $"WHERE Id='{GetPropertyId(entity)}';"; // WHERE Id=5
-            ExecuteNonQuery(sql);
         }
 
         public async Task UpdateAsync<T>(T entity) where T : class
@@ -264,20 +191,8 @@ namespace WebStore.Db
             await ExecuteNonQueryAsync(sql);
         }
 
-        public void Delete<T>(T entity) where T : class
-        {
-            //DELETE FROM Students WHERE StudentId = 11 OR StudentId = 12;
-            var type = typeof(T);
-            var sql =
-                $"DELETE FROM {type.Name} " + // DELETE FROM User
-                $"WHERE Id='{GetPropertyId(entity)}';"; // WHERE Id=5 
-
-            ExecuteNonQuery(sql);
-        }
-
         public async Task DeleteAsync<T>(T entity) where T : class
         {
-            //DELETE FROM Students WHERE StudentId = 11 OR StudentId = 12;
             var type = typeof(T);
             var sql =
                 $"DELETE FROM {type.Name} " + // DELETE FROM User
@@ -286,53 +201,9 @@ namespace WebStore.Db
             await ExecuteNonQueryAsync(sql);
         }
 
-        private static T ExecuteReader<T>(string sql, Func<DbDataReader, T> func)
+        private async Task<T> ExecuteReaderAsync<T>(string sql, Func<DbDataReader, T> func)
         {
-            using (var conn = new SQLiteConnection(DbArgs))
-            {
-                conn.Open();
-                var cmd = new SQLiteCommand(sql, conn);
-                try
-                {
-                    using (var reader = cmd.ExecuteReader())
-                    {
-                        return func(reader);
-                    }
-                }
-#pragma warning disable 168
-                catch (Exception e)
-#pragma warning restore 168
-                {
-                    // TODO log errors
-                    // Log errors
-                    return default;
-                }
-            }
-        }
-
-        private static void ExecuteNonQuery(string sql)
-        {
-            using (var conn = new SQLiteConnection(DbArgs))
-            {
-                conn.Open();
-                var cmd = new SQLiteCommand(sql, conn);
-                try
-                {
-                    cmd.ExecuteNonQuery();
-                }
-#pragma warning disable 168
-                catch (Exception e)
-#pragma warning restore 168
-                {
-                    // TODO log errors
-                    // Log errors
-                }
-            }
-        }
-
-        private static async Task<T> ExecuteReaderAsync<T>(string sql, Func<DbDataReader, T> func)
-        {
-            using (var conn = new SQLiteConnection(DbArgs))
+            using (var conn = new SQLiteConnection(Configuration.Args))
             {
                 await conn.OpenAsync();
                 var cmd = new SQLiteCommand(sql, conn);
@@ -347,7 +218,6 @@ namespace WebStore.Db
                 catch (Exception e)
 #pragma warning restore 168
                 {
-
                     // TODO log errors
                     // Log errors
                     return default;
@@ -355,10 +225,9 @@ namespace WebStore.Db
             }
         }
 
-
-        private static async Task ExecuteNonQueryAsync(string sql)
+        private async Task ExecuteNonQueryAsync(string sql)
         {
-            using (var conn = new SQLiteConnection(DbArgs))
+            using (var conn = new SQLiteConnection(Configuration.Args))
             {
                 await conn.OpenAsync();
                 var cmd = new SQLiteCommand(sql, conn);
@@ -376,16 +245,16 @@ namespace WebStore.Db
             }
         }
 
-        private T ToObject<T>(IDataRecord reader) where T : class
+        private async Task<T> ToObjectAsync<T>(IDataRecord reader) where T : class
         {
             var t = Activator.CreateInstance<T>();
             for (var i = 0; i < reader.FieldCount; i++)
             {
                 var pi = t.GetType().GetProperty(reader.GetName(i));
                 if (pi == null) continue;
-                pi.SetValue(t, ToObject(reader.GetValue(i)));
+                pi.SetValue(t, await ToObject(reader.GetValue(i)));
 
-                object ToObject(object value)
+                async Task<object> ToObject(object value)
                 {
                     switch (pi)
                     {
@@ -394,7 +263,7 @@ namespace WebStore.Db
                         case var _ when IsTimeSpan(pi):
                             return TimeSpan.Parse(value.ToString());
                         case var _ when IsForeignKey(pi):
-                            return InternalSelect(pi, value);
+                            return await InternalSelectAsync(pi, value);
                         case var _ when IsUShort(pi):
                             return ushort.Parse(value.ToString());
                         case var _ when IsBool(pi):
@@ -408,20 +277,20 @@ namespace WebStore.Db
             return t;
         }
 
-        private bool InternalContains(object obj) => Convert.ToBoolean(GetType()
-            .GetMethod(nameof(Contains), StringType)
+        private Task<bool> InternalContainsAsync(object obj) => Task.Run(() => Convert.ToBoolean(GetType()
+            .GetMethod(nameof(ContainsAsync), StringType)
             ?.MakeGenericMethod(obj.GetType())
-            .Invoke(this, new object[] {GetPropertyId(obj)}));
+            .Invoke(this, new object[] {GetPropertyId(obj)})));
 
-        private void InternalInsert(object obj) => GetType()
-            .GetMethod(nameof(Insert))?
+        private Task InternalInsertAsync(object obj) => Task.Run(() => GetType()
+            .GetMethod(nameof(InsertAsync))?
             .MakeGenericMethod(obj.GetType())
-            .Invoke(this, new[] {obj});
+            .Invoke(this, new[] {obj}));
 
-        private object InternalSelect(PropertyInfo pi, object value) => GetType()
-            .GetMethod(nameof(Select), StringType)
+        private Task<object> InternalSelectAsync(PropertyInfo pi, object value) => Task.Run(() => GetType()
+            .GetMethod(nameof(SelectAsync), StringType)
             ?.MakeGenericMethod(pi.PropertyType)
-            .Invoke(this, new[] {value});
+            .Invoke(this, new[] {value}));
 
         private static string GetPropertyNames(Type type) =>
             string.Join(", ", type.GetProperties().Select(e => e.Name));
@@ -456,5 +325,7 @@ namespace WebStore.Db
 
         private static bool IsUnique(PropertyInfo pi) =>
             pi.GetCustomAttributes(typeof(UniqueAttribute), true).Length > 0;
+
+        public static IDatabase Make(IDatabaseConfiguration configuration) => new SQLiteDatabase(configuration);
     }
 }

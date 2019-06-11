@@ -3,13 +3,20 @@ using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
 using System.Web.Http;
-using WebStore.Db;
+using WebStore.Db.UnitOfWorks;
 using DbAccount = WebStore.Model.Accounts.Account;
 
 namespace WebStore.API
 {
     public static class ApiExtensions
     {
+        private static UnitOfWork UnitOfWork { get; }
+
+        static ApiExtensions()
+        {
+            UnitOfWork = new UnitOfWork();
+        }
+
         public static async Task<DbAccount> GetAccount(this HttpRequestMessage request)
         {
             var headers = request.Headers;
@@ -19,7 +26,7 @@ namespace WebStore.API
             var username = usernames.FirstOrDefault();
             var password = passwords.FirstOrDefault();
 
-            return await Database.SelectAsync<DbAccount>($"{nameof(DbAccount.Username)}='{username}'",
+            return await UnitOfWork.AccountRepository.SelectAsync($"{nameof(DbAccount.Username)}='{username}'",
                 $"{nameof(DbAccount.Password)}='{password}'");
         }
 

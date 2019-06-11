@@ -4,7 +4,7 @@ using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
-using WebStore.Db;
+using WebStore.Db.UnitOfWorks;
 using WebStore.Model.Webhooks;
 using DbCategory = WebStore.Model.Product.Category;
 
@@ -12,10 +12,17 @@ namespace WebStore.API
 {
     public class WebhookController : JsonApiController<WebhookForm>
     {
+        private UnitOfWork UnitOfWork { get; }
+
+        public WebhookController()
+        {
+            UnitOfWork = new UnitOfWork();
+        }
+
         protected override async Task<object> HttpGet()
         {
             var account = await Request.GetAccount();
-            var webhook = await Database.SelectAsync<Webhook>($"{nameof(Webhook.Account)}='{account.Id}'");
+            var webhook = await UnitOfWork.WebhookRepository.SelectAsync($"{nameof(Webhook.Account)}='{account.Id}'");
 
             if (webhook == null)
             {
@@ -28,8 +35,9 @@ namespace WebStore.API
                 };
             }
 
-            var categories = await Database.SelectAllAsync<WebhookSubscription>(
-                $"{nameof(WebhookSubscription.Account)}='{account.Id}'");
+            var categories =
+                await UnitOfWork.WebhookSubscriptionRepository.SelectAllAsync(
+                    $"{nameof(WebhookSubscription.Account)}='{account.Id}'");
 
             return new
             {
@@ -49,19 +57,20 @@ namespace WebStore.API
         protected override async Task<HttpResponseMessage> HttpPost(WebhookForm form)
         {
             var account = await Request.GetAccount();
-            if (await Database.ContainsAsync<Webhook>($"{nameof(Webhook.Account)}='{account.Id}'"))
+            if (await UnitOfWork.WebhookRepository.ContainsAsync($"{nameof(Webhook.Account)}='{account.Id}'"))
             {
                 return Request.CreateResponse(HttpStatusCode.BadRequest, "A webhook already exists for this user");
             }
 
             var endpoint = form.Endpoint;
-            await Database.InsertAsync(Webhook.Make(account, endpoint.IPAddress, ushort.Parse(endpoint.Port),
+            await UnitOfWork.WebhookRepository.InsertAsync(Webhook.Make(account, endpoint.IPAddress,
+                ushort.Parse(endpoint.Port),
                 endpoint.Path));
 
             foreach (var category in form.Categories)
             {
-                await Database.InsertAsync(WebhookSubscription.Make(account,
-                    await Database.SelectAsync<DbCategory>(category.Id), category.Insert, category.Update,
+                await UnitOfWork.WebhookSubscriptionRepository.InsertAsync(WebhookSubscription.Make(account,
+                    await UnitOfWork.CategoryRepository.SelectAsync(category.Id), category.Insert, category.Update,
                     category.Delete));
             }
 
@@ -71,11 +80,12 @@ namespace WebStore.API
         protected override async Task<HttpResponseMessage> HttpPut(WebhookForm form)
         {
             var account = await Request.GetAccount();
-            var hook = await Database.SelectAsync<Webhook>($"{nameof(Webhook.Account)}='{account.Id}'");
+            var hook = await UnitOfWork.WebhookRepository.SelectAsync($"{nameof(Webhook.Account)}='{account.Id}'");
             if (hook == null)
             {
                 var endpoint = form.Endpoint;
-                await Database.InsertAsync(Webhook.Make(account, endpoint.IPAddress, ushort.Parse(endpoint.Port),
+                await UnitOfWork.WebhookRepository.InsertAsync(Webhook.Make(account, endpoint.IPAddress,
+                    ushort.Parse(endpoint.Port),
                     endpoint.Path));
             }
             else
@@ -84,19 +94,19 @@ namespace WebStore.API
                 hook.Endpoint.IPAddress = endpoint.IPAddress;
                 hook.Endpoint.Port = ushort.Parse(endpoint.Port);
                 hook.Endpoint.Path = endpoint.Path;
-                await Database.UpdateAsync(hook.Endpoint);
+                await UnitOfWork.WebhookEndpointRepository.UpdateAsync(hook.Endpoint);
             }
 
-            foreach (var subscription in await Database.SelectAllAsync<WebhookSubscription>(
+            foreach (var subscription in await UnitOfWork.WebhookSubscriptionRepository.SelectAllAsync(
                 $"{nameof(WebhookSubscription.Account)}='{account.Id}'"))
             {
-                await Database.DeleteAsync(subscription);
+                await UnitOfWork.WebhookSubscriptionRepository.DeleteAsync(subscription);
             }
 
             foreach (var category in form.Categories)
             {
-                await Database.InsertAsync(WebhookSubscription.Make(account,
-                    await Database.SelectAsync<DbCategory>(category.Id), category.Insert, category.Update,
+                await UnitOfWork.WebhookSubscriptionRepository.InsertAsync(WebhookSubscription.Make(account,
+                    await UnitOfWork.CategoryRepository.SelectAsync(category.Id), category.Insert, category.Update,
                     category.Delete));
             }
 

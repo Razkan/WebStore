@@ -1,9 +1,10 @@
 ﻿using System.Collections.Generic;
 using System.Threading.Tasks;
+using WebStore.Model;
 
 namespace WebStore.Db.Repository
 {
-    public class Repository<T> : IRepository<T> where T : class
+    public class Repository<T> : IRepository<T> where T : class, IDatabaseEntity
     {
         protected IDatabase Context { get; }
 

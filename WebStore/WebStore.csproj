@@ -45,11 +45,17 @@
     <LangVersion>7.1</LangVersion>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="BouncyCastle.Crypto, Version=1.8.3.0, Culture=neutral, PublicKeyToken=0e99375e54769942">
+      <HintPath>..\packages\BouncyCastle.1.8.3.1\lib\BouncyCastle.Crypto.dll</HintPath>
+    </Reference>
     <Reference Include="EntityFramework, Version=6.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089, processorArchitecture=MSIL">
       <HintPath>..\packages\EntityFramework.6.2.0\lib\net45\EntityFramework.dll</HintPath>
     </Reference>
     <Reference Include="EntityFramework.SqlServer, Version=6.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089, processorArchitecture=MSIL">
       <HintPath>..\packages\EntityFramework.6.2.0\lib\net45\EntityFramework.SqlServer.dll</HintPath>
+    </Reference>
+    <Reference Include="Google.Protobuf, Version=3.6.1.0, Culture=neutral, PublicKeyToken=a7d26565bac4d604, processorArchitecture=MSIL">
+      <HintPath>..\packages\Google.Protobuf.3.6.1\lib\net45\Google.Protobuf.dll</HintPath>
     </Reference>
     <Reference Include="Microsoft.CodeDom.Providers.DotNetCompilerPlatform, Version=2.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
       <HintPath>..\packages\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.2.0.0\lib\net45\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.dll</HintPath>
@@ -58,9 +64,14 @@
     <Reference Include="Microsoft.Web.Infrastructure, Version=1.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
       <HintPath>..\packages\Microsoft.Web.Infrastructure.1.0.0.0\lib\net40\Microsoft.Web.Infrastructure.dll</HintPath>
     </Reference>
+    <Reference Include="MySql.Data, Version=8.0.16.0, Culture=neutral, PublicKeyToken=c5687fc88969c44d, processorArchitecture=MSIL">
+      <HintPath>..\packages\MySql.Data.8.0.16\lib\net452\MySql.Data.dll</HintPath>
+    </Reference>
     <Reference Include="Newtonsoft.Json, Version=12.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
       <HintPath>..\packages\Newtonsoft.Json.12.0.1\lib\net45\Newtonsoft.Json.dll</HintPath>
     </Reference>
+    <Reference Include="System.ComponentModel" />
+    <Reference Include="System.Configuration.Install" />
     <Reference Include="System.Data.SQLite, Version=1.0.110.0, Culture=neutral, PublicKeyToken=db937bc2d44ff139, processorArchitecture=MSIL">
       <HintPath>..\packages\System.Data.SQLite.Core.1.0.110.0\lib\net46\System.Data.SQLite.dll</HintPath>
     </Reference>
@@ -70,10 +81,13 @@
     <Reference Include="System.Data.SQLite.Linq, Version=1.0.110.0, Culture=neutral, PublicKeyToken=db937bc2d44ff139, processorArchitecture=MSIL">
       <HintPath>..\packages\System.Data.SQLite.Linq.1.0.110.0\lib\net46\System.Data.SQLite.Linq.dll</HintPath>
     </Reference>
+    <Reference Include="System.Drawing.Design" />
+    <Reference Include="System.Management" />
     <Reference Include="System.Net.Http" />
     <Reference Include="System.Net.Http.Formatting, Version=5.2.7.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
       <HintPath>..\packages\Microsoft.AspNet.WebApi.Client.5.2.7\lib\net45\System.Net.Http.Formatting.dll</HintPath>
     </Reference>
+    <Reference Include="System.Transactions" />
     <Reference Include="System.Web.DynamicData" />
     <Reference Include="System.Web.Entity" />
     <Reference Include="System.Web.ApplicationServices" />
@@ -147,30 +161,38 @@
     <Compile Include="Db\Database.cs" />
     <Compile Include="Db\IDatabase.cs" />
     <Compile Include="Db\Attribute\KeyAttribute.cs" />
+    <Compile Include="Db\Config\DatabaseConfig.cs" />
+    <Compile Include="Db\Databases\MySQLDatabase.cs" />
+    <Compile Include="Db\MultiDatabaseHandler.cs" />
     <Compile Include="Db\Repository\AccountRepository.cs" />
+    <Compile Include="Db\Repository\CategoryRepository.cs" />
     <Compile Include="Db\Repository\IAccountRepository.cs" />
+    <Compile Include="Db\Repository\ICategoryRepository.cs" />
     <Compile Include="Db\Repository\IRepository.cs" />
+    <Compile Include="Db\Repository\ISessionRepository.cs" />
     <Compile Include="Db\Repository\IUserRepository.cs" />
+    <Compile Include="Db\Repository\IWebhookEndpointRepository.cs" />
     <Compile Include="Db\Repository\IWebhookRepository.cs" />
     <Compile Include="Db\Repository\IWebhookSubscriptionRepository.cs" />
     <Compile Include="Db\Repository\Repository.cs" />
+    <Compile Include="Db\Repository\SessionRepository.cs" />
+    <Compile Include="Db\Repository\WebhookEndpointRepository.cs" />
+    <Compile Include="Db\UnitOfWork\UnitOfWork.cs" />
     <Compile Include="Db\Repository\UserRepository.cs" />
     <Compile Include="Db\Repository\WebhookRepository.cs" />
     <Compile Include="Db\Repository\WebhookSubscriptionRepository.cs" />
-    <Compile Include="Db\SQLiteDatabase.cs" />
+    <Compile Include="Db\Databases\SQLiteDatabase.cs" />
     <Compile Include="Db\Attribute\IndexedAttribute.cs" />
     <Compile Include="Db\Attribute\TableAttribute.cs" />
     <Compile Include="Db\Attribute\UniqueAttribute.cs" />
+    <Compile Include="Extensions.cs" />
     <Compile Include="Global.asax.cs">
       <DependentUpon>Global.asax</DependentUpon>
     </Compile>
     <Compile Include="Helpers\Identification.cs" />
     <Compile Include="Helpers\SessionToken.cs" />
     <Compile Include="Model\Account\Account.cs" />
-    <Compile Include="Model\Bid\AcceptedBid.cs" />
-    <Compile Include="Model\Bid\AuctionBid.cs" />
-    <Compile Include="Model\Bid\Biddable.cs" />
-    <Compile Include="Model\Identifiable.cs" />
+    <Compile Include="Db\IDatabaseEntity.cs" />
     <Compile Include="Model\Product\Category.cs" />
     <Compile Include="Model\Product\Good.cs" />
     <Compile Include="Model\Product\Product.cs" />
@@ -196,6 +218,9 @@
     <Compile Include="Webhooks\Webhook.cs" />
   </ItemGroup>
   <ItemGroup>
+    <Content Include="config.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
     <None Include="packages.config" />
     <None Include="Web.Debug.config">
       <DependentUpon>Web.config</DependentUpon>
